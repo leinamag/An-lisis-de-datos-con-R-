@@ -1,0 +1,330 @@
+---
+title: "Reporte de Analisis Detallado"
+author: "Carlos Merino"
+date: "`r format(Sys.time(), '%d de %B, %Y')`"
+output:
+  pdf_document:
+    toc: true
+    latex_engine: xelatex
+  html_document:
+    toc: true
+    toc_float: true
+    number_sections: true
+    theme: cerulean
+params: []
+---
+ 
+```{r setup, include=FALSE}
+# 1. CARGA DE LIBRERÍAS
+library(tidyverse)
+library(janitor)
+library(knitr)
+library(dplyr) 
+library(broom)
+library(ggplot2)
+library(janitor)
+library(broom)
+
+# 2. OPCIONES GLOBALES DEL CHUNK
+knitr::opts_chunk$set(echo = FALSE, 
+                      message = FALSE, 
+                      warning = FALSE, 
+                      fig.align = 'center', 
+                      fig.width = 7, 
+                      fig.height = 5)
+
+# 3. CARGA DE DATOS 
+data <- read_csv("student_exam_scores.csv")
+```
+
+# - 🔍 Extracción e Importación de Datos
+
+La metodología de obtención y carga de datos se realizó en los siguientes pasos:
+
+## - 💾 Extracción de la Fuente
+
+Primero se descargan los datos desde https://www.kaggle.com/ , escogiendo la base de datos "student_exam_scores.csv".
+Luego se guarda escogiendo cualquier directorio de alguna carpeta, en este caso, se escogio la ruta:
+```
+"C:/Users/carlo/Desktop/Proyectos propios/analisis con reporte de datos/Reporte de Datos/student_exam_scores.csv".
+```
+
+## - 📂 Importación a R
+
+Despues se importa esta base de datos al entorno de R con el siguiente codigo:
+
+```
+data <- read_csv("student_exam_scores.csv")
+
+```
+Donde:
+
+```{r codigo_importado, echo=FALSE, results='asis'}
+
+cat("
+| Elemento | Tipo | Descripción |
+| :--- | :--- | :--- |
+| **`data`** | Objeto | Es el nombre con el que guardaremos esta base de datos. |
+| **`read_csv()`** | Función | Función que lee archivos en formato CSV, reconociendo los tipos de datos de las columnas. |
+| **`(student_exam...)`** | Directorio | Ubicacion del archivo |
+")
+```
+
+# - 🧹 Limpieza basica y estandarizacion
+
+Este análisis se basa en el conjunto de datos de puntajes estudiantiles, el cual se ha limpiado y estandarizado.
+
+## - 🛠️ Carga de Librerías
+Para la estandarización de nombres de columnas, se utilizó la librería janitor.
+
+## - 🧪️ Proceso de Estandarización
+Se aplicó la función clean_names() para estandarizar los nombres de todas las columnas, y la función mutate() para asegurar el formato de la variable clave del estudiante.
+
+El código utilizado fue:
+
+```{r limpieza_datos, echo=TRUE}
+data <- data %>%
+  janitor::clean_names() %>% 
+  mutate(student_id = as.character(student_id))
+```
+Donde:
+
+```{r codigo_datos, echo=FALSE, results='asis'}
+
+cat("
+| Elemento | Tipo | Descripción |
+| :--- | :--- | :--- |
+| **`data`** | Objeto | Estandariza los nombres de todas las columnas (ej. de 'Previous Scores' a 'previous_scores'). |
+| **`janitor::clean_names()`** | Limpieza | Función que lee archivos en formato CSV, reconociendo los tipos de datos de las columnas. |
+| **`mutate()`** | Transformación | Modifica la columna student_id para asegurar que se almacene como un carácter. |
+")
+```
+
+# - 📊 Exploracion inicial y estadistica descriptiva
+
+Esta etapa se realiza sobre el conjunto de datos transformado (data_clean) para obtener un primer vistazo a la estructura, validar el tipo de dato de las nuevas variables y resumir las características centrales de las variables numéricas.
+
+## - 📄 glimpse(data_clean)
+
+La función glimpse() proporciona un resumen conciso de las filas, columnas y, lo más importante, el tipo de dato de cada variable (dbl, chr). Esto confirma que las transformaciones (como la de student_id a carácter) se realizaron correctamente.
+
+```{r glimpse(data_clean), echo=TRUE}
+glimpse(data)
+```
+
+## - 🏆 summary(data_clean)
+
+La función summary() es crucial, ya que calcula métricas descriptivas esenciales (media, mediana, cuartiles) para las variables continuas.
+
+```{r summary(data_clean), echo=TRUE}
+summary(data)
+```
+
+## - 💡 head(data_clean)
+
+La función head() permite visualizar las primeras filas del dataset. Esto sirve como una validación rápida para asegurar que las nuevas variables categóricas (pass_fail, previos_cat) se han creado con los valores esperados.
+
+```{r head(data_clean), echo=TRUE}
+head(data)
+```
+
+# - 📝 Transformacion de los datos a traves de variables nuevas
+
+A partir del dataset limpio, se crean seis nuevas variables categóricas y de ratio (como el nivel de aprobación, el nivel previo y el balance estudio/sueño) esenciales para el análisis de rendimiento.
+
+```{r transformacion_datos, echo=TRUE}
+data_clean <- data %>% 
+  mutate(
+    study_per_sleep = hours_studied / sleep_hours,
+    previos_cat = case_when(
+      previous_scores >= 80 ~ "Alto",
+      previous_scores >= 60 ~ "Medio",
+      TRUE ~ "Bajo"
+    ),
+    exam_level = case_when(
+      exam_score >= 40 ~ "Alto",
+      exam_score >= 30 ~ "Medio",
+      TRUE ~ "Bajo"
+    ),
+    pass_fail = if_else(exam_score >= 30, "Aprobado", "Reprobado"),
+    exam_zscore = (exam_score - mean(exam_score, na.rm = TRUE)) / sd(exam_score, na.rm = TRUE),
+    exam_percentile = percent_rank(exam_score) * 100
+  )
+```
+
+Donde:
+
+```{r transformacion_dato, echo=FALSE, results='asis'}
+
+cat("
+| Elemento | Tipo | Descripción |
+| :--- | :--- | :--- |
+| **`student_id`** | Carácter | Asegura que el ID sea tratado como texto, no como valor numérico. |
+| **`study_per_sleep`** | Ratio (Numérico) | Mide el balance entre el tiempo dedicado al estudio y el descanso (clave para el gráfico de burbujas). |
+| **`previos_cat`** | Categórica | Clasifica el historial académico en Alto, Medio o Bajo para análisis comparativos. |
+| **`exam_level`** | Categórica | Clasifica el puntaje del examen en Alto, Medio o Bajo. |
+| **`pass_fail`** | Binaria | Determina el estado de aprobación/reprobación (Aprobado >= 30, Reprobado < 30). Crucial para la correlación. |
+| **`exam_zscore`** | Numérico | Estandariza el puntaje para medir qué tan lejos está de la media general. |
+| **`exam_percentile`** | Numérico | Mide el porcentaje de estudiantes que obtuvieron un puntaje igual o inferior. |
+")
+```
+
+
+# - Graficos de ggplot2
+
+## - 📈 Histograma 📉
+
+El **histograma** a continuación muestra la distribución de la frecuencia de los puntajes obtenidos, con una línea vertical indicando la **media general** del examen. Esto permite identificar rápidamente la concentración de resultados.
+
+```{r plot_g1, echo=FALSE, fig.cap="Gráfico de Histograma: Relación entre Frecuencias y Puntaje", fig.width=8, fig.height=5}
+ggplot(data_clean, aes(x = exam_score)) +
+  geom_histogram(binwidth = 5, fill = "#F6CFFF", color = "black", alpha = 1) +
+  geom_vline(aes(xintercept = mean(exam_score)), color = "red", linetype = "solid", linewidth = 1.2) +
+  annotate("text", x = mean(data_clean$exam_score) + 0.5, y = 56,
+           label = paste("📊 Media:", round(mean(data_clean$exam_score), 1)),
+           color = "orange", hjust = 0, size = 5) +
+  labs(title = "📝 Distribución de puntajes del examen",
+       subtitle = "🔍 Incluye línea de referencia de la media general",
+       x = "📌 Puntaje del examen", y = "🎨 Frecuencia") +
+  theme_minimal(base_size = 14) +
+  theme(plot.title = element_text(face = "bold", color = "#2c3e50", hjust = 0.4),
+        plot.subtitle = element_text(color = "#7f8c8d", hjust = 0.4),
+        axis.title.x = element_text(color = "blue", face = "bold"),
+        axis.title.y = element_text(color = "purple", face = "bold"),
+        panel.grid.minor = element_blank()
+        )
+```
+
+## - 🌊 Densidad por categoría de aprobación 📊
+
+El **gráfico de densidad** compara las distribuciones de puntajes para los estudiantes que **Aprobaron** y **Reprobaron**. La densidad es clave para visualizar la separación entre ambos grupos respecto al umbral de aprobación.
+
+```{r plot_g2, echo=FALSE, fig.cap="Gráfico de Densidad: Relación entre estado de aprobación", fig.width=8, fig.height=5}
+ggplot(data_clean, aes(x = exam_score, fill = pass_fail)) +
+  geom_density(alpha = 1) +
+  geom_vline(xintercept = 30.8, linetype = "dashed", color = "black", linewidth = 1) +
+  labs(title = "📊 Distribución de densidad por estado de aprobación",
+       subtitle = "📝 Aprobados vs Reprobados",
+       x = "📌 Puntaje del examen", y = "📈 Densidad", fill = "🎯 Estado") +
+  scale_fill_manual(
+    values = c("Aprobado" = "#89FF73", "Reprobado" = "#E86658"),
+    labels = c("Aprobado ✅", "Reprobado ❌"))+
+  theme_minimal(base_size = 14) +
+  theme(legend.position = "top",
+        plot.title = element_text(color = "#A11B7C", face = "bold", hjust = 0.5),
+        plot.subtitle = element_text(color = "#35F3FC", face = "bold", hjust = 0.5),
+        axis.title.x = element_text(color = "#E566FF", face = "bold", hjust = 0.5),
+        axis.title.y = element_text(color = "#EBA50C", face = "bold", hjust = 0.5),
+        legend.title = element_text(face = "bold", color = "#6E5412"),
+        legend.text = element_text(size = 12, color = "black"))
+```
+
+## - 📦 Boxplot 🎓
+
+Este **gráfico de cajas y bigotes (Boxplot)** evalúa la distribución del puntaje del examen actual segmentado por la **categoría de puntaje previo** (Bajo, Medio, Alto). La caja muestra la mediana y los cuartiles de cada grupo.
+
+```{r plot_g3, echo=FALSE, fig.cap="Gráfico de Boxplot: Distribución de puntajes", fig.width=8, fig.height=5}
+ggplot(data_clean, aes(x = previos_cat, y = exam_score, fill = previos_cat)) +
+  geom_boxplot(alpha = 0.8, outlier.color = "#E53935", outlier.size = 2) +
+  stat_summary(fun = mean, geom = "point", shape = 17, size = 3, color = "black") +
+  labs(title = "📦 Distribución de puntajes por nivel académico previo",
+       subtitle = "📊 Análisis de rendimiento según historial académico",
+       x = "📂 Categoría previa", y = "📝 Puntaje del examen", fill = "Categoría") +
+  scale_fill_brewer(palette = "Set2") +
+  theme_minimal(base_size = 14) +
+  theme(
+    legend.position = "right",
+    plot.title = element_text(face = "bold", color = "#5055F2", hjust = 0.5),
+    plot.subtitle = element_text(face = "bold", color = "#06D4D2", hjust = 0.5),
+    axis.title.x = element_text(face = "bold", color = "#3BFF61", hjust = 0.5),
+    axis.title.y = element_text(face = "bold", color = "#498C0D", hjust = 0.5),
+    legend.title = element_text(face = "bold", color = "#CC2F49"),
+    legend.text = element_text(face = "bold"))
+```
+
+## - 🔗 Gráfico de dispersión 🎯
+
+El **gráfico de dispersión** a continuación muestra la fuerte **correlación positiva** entre la cantidad de horas dedicadas al estudio y el puntaje obtenido en el examen, diferenciando la tendencia por el resultado final (Aprobado/Reprobado).
+
+```{r plot_g4, echo=FALSE, fig.cap="Gráfico de Dispersión: Relación entre horas estudiadas y puntaje del examen", fig.width=8, fig.height=5}
+ggplot(data_clean, aes(x = hours_studied, y = exam_score, color = pass_fail)) +
+  geom_point(alpha = 0.7, size = 2, shape = 15) +
+  geom_smooth(method = "lm", se = FALSE, aes(group = pass_fail), linewidth = 1.2) +
+  geom_hline(yintercept = 30, linetype = "dashed", color = "#7f8c8d", alpha = 0.7) +
+  labs(title = "📈 Relación entre Horas Estudiadas y Puntaje del Examen",
+       subtitle = "🔍 Correlación estudio-rendimiento diferenciado por resultado",
+       x = "⏰ Horas Estudiadas", y = "🎯 Puntaje del Examen", color = "🏆 Resultado") +
+  scale_color_manual(values = c("Aprobado" = "#4CAF50", "Reprobado" = "#F44336"),
+                     labels = c("Aprobado ✅", "Reprobado ❌")) +
+  theme_minimal(base_size = 11) +
+  theme(
+    legend.position = "top",
+    plot.title = element_text(face = "bold", color = "#2E1FED", hjust = 0.5),
+    plot.subtitle = element_text(face = "bold", color = "#388DE8", hjust = 0.5),
+    axis.title.x = element_text(face = "bold", color = "#67E668", hjust = 0.5),
+    axis.title.y = element_text(face = "bold", color = "#40692F", hjust = 0.5),
+    legend.title = element_text(face = "bold", color = "darkblue", hjust = 0.5),
+    legend.text = element_text(face = "bold"),
+    legend.background = element_rect(fill = "#FFC9C9", color = NA)
+  )
+```
+
+## - 🔢 Gráfico de barras 👥
+
+El **gráfico de barras** muestra la **frecuencia absoluta y relativa** de estudiantes clasificados en los niveles de desempeño (Bajo, Medio, Alto) creados a partir del puntaje final del examen.
+
+```{r plot_g5, echo=FALSE, fig.cap="Gráfico de Barras: Distribución de Estudiantes por Nivel de Examen", fig.width=8, fig.height=5}
+ggplot(data_clean, aes(x = exam_level, fill = exam_level)) +
+  geom_bar(alpha = 0.8, color = "white", linewidth = 0.4) +
+  geom_text(stat = 'count', aes(label = after_stat(count)), 
+            vjust = -0.5, size = 4, fontface = "bold", color = "black") +
+  geom_text(stat = 'count', 
+            aes(label = paste0(round(after_stat(count)/nrow(data_clean)*100, 1), "%")),
+            vjust = 1.5, size = 4, fontface = "bold", color = "white") +
+  labs(title = "📊 Distribución de Estudiantes por Nivel de Examen",
+       subtitle = "🏆 Clasificación según desempeño en la evaluación",
+       x = "🎯 Nivel de Examen", y = "👥 Cantidad de Estudiantes", fill = "Nivel") +
+  scale_fill_brewer(palette = "Set1") +
+  scale_x_discrete(limits = c("Bajo", "Medio", "Alto")) +
+  theme_minimal(base_size = 14) +
+  theme(
+    legend.position = "right",
+    plot.title = element_text(color = "#F28500",face = "bold", hjust = 0.5),
+    plot.subtitle = element_text(color = "#FF00C0", hjust = 0.5),
+    axis.title.x = element_text(color = "#87F0FF", face = "bold"),
+    axis.title.y = element_text(color = "#DE6EFA", face = "bold"),
+  )
+```
+
+## - ⚖️ Análisis del ratio estudio/sueño 🌙
+
+El **gráfico de burbujas** evalúa el **balance entre horas estudiadas y horas de sueño (Ratio)** en relación con el puntaje. El **tamaño de las burbujas** representa las horas de sueño, indicando si el descanso es un factor clave en el rendimiento final.
+
+```{r plot_g6, echo=FALSE, fig.cap="Gráfico de Análisis: ratio estudio/sueño", fig.width=8, fig.height=5}
+ggplot(data_clean, aes(x = study_per_sleep, y = exam_score)) +
+  geom_point(aes(color = pass_fail, size = sleep_hours), alpha = 0.6, shape = 16) +
+  geom_hline(yintercept = 30, linetype = "dashed", color = "#7f8c8d", alpha = 0.7) +
+  geom_vline(xintercept = 1, linetype = "dotted", color = "#7f8c8d", alpha = 0.7) +
+  annotate("text", x = max(data_clean$study_per_sleep), y = 30, 
+           label = "Umbral de Aprobación (30)", color = "#7f8c8d", hjust = 1, fontface = "bold") +
+  annotate("text", x = 1, y = max(data_clean$exam_score), 
+           label = "Ratio 1:1 (Equilibrio)", color = "#7f8c8d", vjust = -0.5, fontface = "bold") +
+  labs(title = "⚖️ Impacto del Balance Estudio-Sueño en el Rendimiento",
+       subtitle = "● Color = Resultado | ● Tamaño = Horas de Sueño",
+       x = "📊 Ratio Horas Estudiadas / Horas de Sueño", y = "🎯 Puntaje del Examen",
+       color = "🏆 Resultado", size = "😴 Horas de Sueño") +
+  scale_color_manual(
+    values = c("Aprobado" = "#4CAF50", "Reprobado" = "#F44336"),
+    labels = c("Aprobado ✅", "Reprobado ❌")) +
+  scale_size_continuous(range = c(1, 6), breaks = seq(4, 10, 2)) +
+  theme_minimal(base_size = 14) +
+  theme(
+    legend.position = "right",
+    plot.title = element_text(color = "#FA4674", face = "bold", hjust = 0.5),
+    plot.subtitle = element_text(color = "#088F06", face = "bold", hjust = 0.5),
+    axis.title.x = element_text(color = "#9191FF", face = "bold", hjust = 0.5),
+    axis.title.y = element_text(color = "#C608FC", face = "bold", hjust = 0.5),
+    legend.title = element_text(face = "bold", color = "#A6A663"),
+    legend.text = element_text(face = "bold", color = "#2c3e50"),
+    legend.background = element_rect(fill = "#f8f9fa"))
+```

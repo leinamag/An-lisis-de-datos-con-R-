@@ -1,0 +1,18 @@
+\contentsline {section}{- 🔍 Extracción e Importación de Datos}{1}{section*.2}%
+\contentsline {subsection}{- 💾 Extracción de la Fuente}{2}{section*.3}%
+\contentsline {subsection}{- 📂 Importación a R}{2}{section*.4}%
+\contentsline {section}{- 🧹 Limpieza basica y estandarizacion}{2}{section*.5}%
+\contentsline {subsection}{- 🛠️ Carga de Librerías}{2}{section*.6}%
+\contentsline {subsection}{- 🧪️ Proceso de Estandarización}{2}{section*.7}%
+\contentsline {section}{- 📊 Exploracion inicial y estadistica descriptiva}{3}{section*.8}%
+\contentsline {subsection}{- 📄 glimpse(data\_clean)}{3}{section*.9}%
+\contentsline {subsection}{- 🏆 summary(data\_clean)}{3}{section*.10}%
+\contentsline {subsection}{- 💡 head(data\_clean)}{4}{section*.11}%
+\contentsline {section}{- 📝 Transformacion de los datos a traves de variables nuevas}{4}{section*.12}%
+\contentsline {section}{- Graficos de ggplot2}{5}{section*.13}%
+\contentsline {subsection}{- 📈 Histograma 📉}{5}{section*.14}%
+\contentsline {subsection}{- 🌊 Densidad por categoría de aprobación 📊}{5}{section*.15}%
+\contentsline {subsection}{- 📦 Boxplot 🎓}{5}{section*.16}%
+\contentsline {subsection}{- 🔗 Gráfico de dispersión 🎯}{5}{section*.17}%
+\contentsline {subsection}{- 🔢 Gráfico de barras 👥}{10}{section*.18}%
+\contentsline {subsection}{- ⚖️ Análisis del ratio estudio/sueño 🌙}{10}{section*.19}%
